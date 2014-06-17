@@ -1,6 +1,3 @@
-# Piwik (https://piwik.org/)
-# MariaDB (https://mariadb.org/)
-
 FROM phusion/passenger-nodejs
 MAINTAINER Brian Prodoehl <bprodoehl@connectify.me>
 
