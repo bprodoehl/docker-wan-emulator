@@ -8,7 +8,7 @@ ENV LANG       en_US.UTF-8
 ENV LC_ALL     en_US.UTF-8
 
 # Install dependencies
-RUN apt-get -y install gcc lua5.1 lua5.1-dev make cmake git ca-certificates
+RUN apt-get -y install gcc lua5.1 lua5.1-dev make cmake git ca-certificates bridge-utils dnsmasq
 
 # Grab sources
 RUN cd /tmp && git clone git://nbd.name/luci2/libubox.git
@@ -31,10 +31,6 @@ RUN cp /usr/local/lib/libubox.so /usr/lib/.
 ADD files/sbin/netem-control.lua /sbin/netem-control
 RUN chmod a+x /sbin/netem-control
 
-ADD scripts /scripts
-RUN chmod +x /scripts/start.sh
-RUN touch /firstrun
-
 # Initialize UCI
 RUN mkdir /etc/config && touch /etc/config/netem
 
@@ -52,6 +48,11 @@ RUN cd /home/app/webapp && npm install
 ADD files/webapp.conf /etc/nginx/sites-enabled/webapp.conf
 RUN rm -f /etc/nginx/sites-enabled/default
 RUN rm -f /etc/service/nginx/down
+
+RUN echo "app ALL = NOPASSWD: /sbin/brctl, /sbin/ifconfig, /sbin/tc, /sbin/netem-control, /usr/local/bin/uci" > /etc/sudoers.d/app
+
+# Enable insecure key by default
+RUN /usr/sbin/enable_insecure_key
 
 EXPOSE 22 80 3000
 
