@@ -2,6 +2,7 @@
 
 var async = require('async');
 var exec = require('child_process').exec;
+var sprintf = require("sprintf-js").sprintf;
 
 var execHelper = function (cmd, cb) {
     var child = exec(cmd,
@@ -47,6 +48,24 @@ function createBridge (bridgeName, interfaces, response) {
     });
 }
 
+function createNat (natName, lanIface, wanIface, response) {
+    async.series([
+        function(callback) {
+            console.log('Creating NAT');
+            execHelper(sprintf('sudo iptables -t nat -A POSTROUTING -o %s -j MASQUERADE && '+
+'sudo iptables -A FORWARD -i %s -o %s -m state --state RELATED,ESTABLISHED -j ACCEPT && ' +
+'sudo iptables -A FORWARD -i %s -o %s -j ACCEPT', wanIface, wanIface, lanIface, lanIface, wanIface), callback);
+        }
+    ],
+    function(error, results) {
+        console.log('All done!');
+        if (typeof(error) !== 'undefined' && error !== null)
+            response.send(400, 'failure: ' + error);
+        else
+            response.send(200, 'success');
+    });
+}
+
 exports.get_ports = function (req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Headers", "X-Requested-With");
@@ -80,7 +99,6 @@ exports.get_bridge = function (req, res, next) {
 exports.post_bridge = function (req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Headers", "X-Requested-With");
-    var responseBody = 'post_bridge ' + req.params.id + '\n';
     
     var bridgeName = req.params.id;
     var interfaces = req.body.ifaces;
@@ -102,5 +120,9 @@ exports.get_nat = function (req, res, next) {
 exports.post_nat = function (req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Headers", "X-Requested-With");
-    res.send('post_nat ' + req.params.id + '\n');
+    
+    var natName = req.params.id;
+    var lanIface = req.body.lan;
+    var wanIface = req.body.wan;
+    createNat(natName, lanIface, wanIface, res);
 };

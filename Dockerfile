@@ -8,7 +8,7 @@ ENV LANG       en_US.UTF-8
 ENV LC_ALL     en_US.UTF-8
 
 # Install dependencies
-RUN apt-get -y install gcc lua5.1 lua5.1-dev make cmake git ca-certificates bridge-utils dnsmasq
+RUN apt-get -y install gcc lua5.1 lua5.1-dev make cmake git ca-certificates bridge-utils dnsmasq iptables tcpdump
 
 # Grab sources
 RUN cd /tmp && git clone git://nbd.name/luci2/libubox.git
@@ -49,7 +49,7 @@ ADD files/webapp.conf /etc/nginx/sites-enabled/webapp.conf
 RUN rm -f /etc/nginx/sites-enabled/default
 RUN rm -f /etc/service/nginx/down
 
-RUN echo "app ALL = NOPASSWD: /sbin/brctl, /sbin/ifconfig, /sbin/tc, /sbin/netem-control, /usr/local/bin/uci" > /etc/sudoers.d/app
+RUN echo "app ALL = NOPASSWD: /sbin/brctl, /sbin/ifconfig, /sbin/tc, /sbin/iptables, /sbin/netem-control, /usr/local/bin/uci" > /etc/sudoers.d/app
 
 # Enable insecure key by default
 RUN /usr/sbin/enable_insecure_key
