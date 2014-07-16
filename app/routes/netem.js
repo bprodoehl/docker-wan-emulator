@@ -66,6 +66,11 @@ function createNat (natName, lanIface, wanIface, response) {
     });
 }
 
+function configurePort (name, params, response) {
+    console.log('Configuring port ' + name + ' with ' + JSON.stringify(params));
+    response.send(200, 'success');
+}
+
 exports.get_ports = function (req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Headers", "X-Requested-With");
@@ -81,7 +86,10 @@ exports.get_port = function (req, res, next) {
 exports.post_port = function (req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Headers", "X-Requested-With");
-    res.send('post_port ' + req.params.id + '\n');
+    
+    var portName = req.params.id;
+    var portParams = req.body;
+    configurePort(portName, portParams, res);
 };
 
 exports.get_bridges = function (req, res, next) {

@@ -10,6 +10,9 @@ ENV LC_ALL     en_US.UTF-8
 # Install dependencies
 RUN apt-get -y install gcc lua5.1 lua5.1-dev make cmake git ca-certificates bridge-utils dnsmasq iptables tcpdump
 
+# HACK around https://github.com/dotcloud/docker/issues/5490
+RUN mv /usr/sbin/tcpdump /usr/bin/tcpdump
+
 # Grab sources
 RUN cd /tmp && git clone git://nbd.name/luci2/libubox.git
 RUN cd /tmp && git clone git://nbd.name/uci.git
