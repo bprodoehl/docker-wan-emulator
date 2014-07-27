@@ -8,7 +8,10 @@ ENV LANG       en_US.UTF-8
 ENV LC_ALL     en_US.UTF-8
 
 # Install dependencies
-RUN apt-get -y install gcc lua5.1 lua5.1-dev make cmake git ca-certificates bridge-utils dnsmasq iptables tcpdump
+RUN apt-get update && \
+    apt-get -y install gcc lua5.1 lua5.1-dev make cmake git ca-certificates \
+                       bridge-utils dnsmasq iptables tcpdump redis-server \
+                       libhiredis-dev
 
 # HACK around https://github.com/dotcloud/docker/issues/5490
 RUN mv /usr/sbin/tcpdump /usr/bin/tcpdump
@@ -38,7 +41,7 @@ RUN chmod a+x /sbin/netem-control
 RUN mkdir /etc/config && touch /etc/config/netem
 
 # Install speedtest CLI
-RUN apt-get -y install python-setuptools
+RUN apt-get update && apt-get -y install python-setuptools
 RUN easy_install pip
 RUN pip install speedtest-cli
 
@@ -52,10 +55,16 @@ ADD files/webapp.conf /etc/nginx/sites-enabled/webapp.conf
 RUN rm -f /etc/nginx/sites-enabled/default
 RUN rm -f /etc/service/nginx/down
 
-RUN echo "app ALL = NOPASSWD: /sbin/brctl, /sbin/ifconfig, /sbin/tc, /sbin/iptables, /sbin/netem-control, /usr/local/bin/uci" > /etc/sudoers.d/app
+RUN echo "app ALL = NOPASSWD: /sbin/brctl, /sbin/ifconfig, /sbin/tc, /sbin/iptables, /sbin/netem-control, /usr/local/bin/uci, /usr/bin/sv" > /etc/sudoers.d/app
 
-# Enable insecure key by default
-RUN /usr/sbin/enable_insecure_key
+# Configure runit
+RUN mkdir -p /etc/service/dnsmasq
+ADD runit/dnsmasq.sh /etc/service/dnsmasq/run
+ADD config/dnsmasq.conf /etc/dnsmasq.conf
+RUN mkdir -p /etc/dnsmasq.d && chown app /etc/dnsmasq.d
+
+RUN mkdir -p /etc/service/redis
+ADD runit/redis.sh /etc/service/redis/run
 
 EXPOSE 22 80 3000
 

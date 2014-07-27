@@ -14,6 +14,13 @@
     "body-parser": "^1.4.3",
     "express": "^4.6.1",
     "pkginfo": "^0.3.0",
+    "redis": "^0.11.0",
     "sprintf-js": "0.0.7"
+  },
+  "devDependencies": {
+    "grunt": "^0.4.5",
+    "grunt-cli": "^0.1.13",
+    "grunt-contrib-jshint": "^0.10.0",
+    "grunt-nodemon": "^0.3.0"
   }
 }

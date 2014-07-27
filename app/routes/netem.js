@@ -4,6 +4,9 @@ var async = require('async');
 var exec = require('child_process').exec;
 var sprintf = require("sprintf-js").sprintf;
 
+
+var Netem = require('../lib/netem');
+
 var execHelper = function (cmd, cb) {
     var child = exec(cmd,
         function (error, stdout, stderr) {
@@ -52,22 +55,46 @@ function createNat (natName, lanIface, wanIface, response) {
     async.series([
         function(callback) {
             console.log('Creating NAT');
-            execHelper(sprintf('sudo iptables -t nat -A POSTROUTING -o %s -j MASQUERADE && '+
-'sudo iptables -A FORWARD -i %s -o %s -m state --state RELATED,ESTABLISHED -j ACCEPT && ' +
-'sudo iptables -A FORWARD -i %s -o %s -j ACCEPT', wanIface, wanIface, lanIface, lanIface, wanIface), callback);
+            execHelper('sudo iptables -t nat -A POSTROUTING -o '+wanIface+' -j MASQUERADE && '+
+'sudo iptables -A FORWARD -i '+wanIface+' -o '+lanIface+' -m state --state RELATED,ESTABLISHED -j ACCEPT && ' +
+'sudo iptables -A FORWARD -i '+lanIface+' -o '+wanIface+' -j ACCEPT && ' +
+'echo interface='+lanIface+' > /etc/dnsmasq.d/'+lanIface+'.conf && ' +
+'ip addr show dev '+lanIface+' | awk -F\'[ /]*\' \'/inet /{print $3}\' | awk -F\'.\' \'{print "dhcp-range="$1"."$2"."$3".50,"$1"."$2"."$3".150,1h"}\' >> /etc/dnsmasq.d/'+lanIface+'.conf && ' +
+'sudo sv restart dnsmasq', callback);
         }
     ],
     function(error, results) {
         console.log('All done!');
         if (typeof(error) !== 'undefined' && error !== null)
-            response.send(400, 'failure: ' + error);
+            response.status(400).send('failure: ' + error);
         else
-            response.send(200, 'success');
+            response.status(200).send('success');
     });
 }
 
 function configurePort (name, params, response) {
     console.log('Configuring port ' + name + ' with ' + JSON.stringify(params));
+    
+//    { "id": 2,
+//      "ifname": "eth1",
+//      "ratecontrol": "1",
+//      "ratecontrol_rate": "1000",
+//      "delay": "1",
+//      "delay_ms": "20",
+//      "delay_var": "0",
+//      "delay_corr": "0",
+//      "reordering": "1",
+//      "reordering_immed_pct": "0",
+//      "reordering_corr": "0",
+//      "loss": "1",
+//      "loss_pct": "0",
+//      "loss_corr": "0",
+//      "duplication": "1",
+//      "duplication_pct": "0",
+//      "corruption": "0",
+//      "corruption_pct": "0"
+//    }
+    
     response.send(200, 'success');
 }
 
