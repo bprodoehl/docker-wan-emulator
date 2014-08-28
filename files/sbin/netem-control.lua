@@ -1,6 +1,6 @@
 #!/usr/bin/lua
 --[[
-Copyright 2012 Connectify
+Copyright 2014 Connectify
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -29,13 +29,10 @@ function setRules (operation)
         end
         enabled = x:get("netem", section[".name"], "enabled")
         if enabled == "1" then
-            qdisc_parent = qdisc_parent + 1
+            --qdisc_parent = qdisc_parent + 1
 
             if (operation == "add" or operation == "del") then
                 tc_str = "tc qdisc del dev "..iface.." root"
-                exec(tc_str)
-                tc_str = "tc qdisc replace dev "..iface.." handle "..qdisc_parent..
-                         ": root htb default 11"
                 exec(tc_str)
             end
 
@@ -44,40 +41,9 @@ function setRules (operation)
                 return
             end
 
-            tc_str = "tc class "..operation.." dev "..iface.." parent "..
-                     qdisc_parent..": classid "..qdisc_parent..":1 htb rate 1000Mbit quantum 60000"
-            err = exec(tc_str);
-            if err ~= 0 then
-                errors = errors + 1
-                return err
-            end
-
-            ratelimit = "1000Mbit"
-            rate_control_enabled = x:get("netem", section[".name"], "ratecontrol")
-            if rate_control_enabled == "1" then
-                ratelimit = x:get("netem", section[".name"], "ratecontrol_rate")
-                if ratelimit == nil then
-                   ratelimit = 1000000
-                end
-                ratelimit = ratelimit.."kbit"
-            end
-
-            tc_str = "tc class "..operation.." dev "..iface.." parent "..qdisc_parent..
-                     ":1 classid "..qdisc_parent..":11 htb rate "..ratelimit.." quantum 60000"
-            err = exec(tc_str);
-            if err ~= 0 then
-                errors = errors + 1
-                return err
-            end
-
-            last_id = 11
-            parent = last_id
-            current_id = last_id + 1
             netem_used = 0
 
-            tc_str = "tc qdisc "..operation.." dev "..iface.." parent "..qdisc_parent..
-                         ":"..parent.." handle "..current_id..": netem"
-            last_id = current_id
+            tc_str = "tc qdisc "..operation.." dev "..iface.." root netem"
 
             delay_enabled = x:get("netem", section[".name"], "delay")
             if delay_enabled == "1" then
@@ -96,7 +62,7 @@ function setRules (operation)
                 end
                 tc_str = tc_str.." delay "..delay_ms.."ms "..delay_var.."ms "..delay_corr.."%"
             end
-            
+
             reorder_enabled = x:get("netem", section[".name"], "reordering")
             if reorder_enabled == "1" then
                 netem_used = 1
@@ -145,6 +111,16 @@ function setRules (operation)
                 tc_str = tc_str.." corrupt "..corrupt_pct.."%"
             end
 
+            rate_enabled = x:get("netem", section[".name"], "ratecontrol")
+            if rate_enabled == "1" then
+                netem_used = 1
+                ratecontrol_rate = x:get("netem", section[".name"], "ratecontrol_rate")
+                if ratecontrol_rate == nil then
+                    ratecontrol_rate = 0
+                end
+                tc_str = tc_str.." rate "..ratecontrol_rate.."kbit"
+            end
+
             if netem_used == 0 then
                 tc_str = tc_str.." delay 0ms"
             end
@@ -163,7 +139,6 @@ function setRules (operation)
     end)
     return errors
 end
-
 
 function load ()
     print ("  Loading WAN Emulation rules...")
