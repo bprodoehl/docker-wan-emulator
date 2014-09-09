@@ -18,7 +18,6 @@ end
 
 function setRules (operation)
     local x = uci.cursor()
-    local qdisc_parent = 0
     local errors = 0
 
     x:foreach("netem", "interface",
@@ -29,10 +28,14 @@ function setRules (operation)
         end
         enabled = x:get("netem", section[".name"], "enabled")
         if enabled == "1" then
-            --qdisc_parent = qdisc_parent + 1
-
+            delay_ms = 0
+            ifb_iface = string.gsub(iface, "eth", "ifb")
             if (operation == "add" or operation == "del") then
+                tc_str = "tc qdisc del dev "..iface.." ingress"
+                exec(tc_str)
                 tc_str = "tc qdisc del dev "..iface.." root"
+                exec(tc_str)
+                tc_str = "tc qdisc del dev "..ifb_iface.." root"
                 exec(tc_str)
             end
 
@@ -41,9 +44,24 @@ function setRules (operation)
                 return
             end
 
+            ip_str = "ip link add dev "..ifb_iface.." type ifb"
+            err = exec(ip_str);
+            ip_str = "ip link set dev "..ifb_iface.." up"
+            err = exec(ip_str);
+
+            tc_str = "tc qdisc "..operation.." dev "..iface.." ingress"
+            err = exec(tc_str);
+
+            tc_str = "tc filter add dev "..iface.." parent ffff: protocol "..
+                     "ip u32 match u32 0 0 flowid 1:1 action mirred egress "..
+                     "redirect dev "..ifb_iface
+            err = exec(tc_str);
+
+            netem_parent = "root"
             netem_used = 0
 
-            tc_str = "tc qdisc "..operation.." dev "..iface.." root netem"
+            tc_str = "tc qdisc "..operation.." dev "..ifb_iface.." "..
+                     netem_parent.." handle 10:0 netem"
 
             delay_enabled = x:get("netem", section[".name"], "delay")
             if delay_enabled == "1" then
@@ -111,16 +129,6 @@ function setRules (operation)
                 tc_str = tc_str.." corrupt "..corrupt_pct.."%"
             end
 
-            rate_enabled = x:get("netem", section[".name"], "ratecontrol")
-            if rate_enabled == "1" then
-                netem_used = 1
-                ratecontrol_rate = x:get("netem", section[".name"], "ratecontrol_rate")
-                if ratecontrol_rate == nil then
-                    ratecontrol_rate = 0
-                end
-                tc_str = tc_str.." rate "..ratecontrol_rate.."kbit"
-            end
-
             if netem_used == 0 then
                 tc_str = tc_str.." delay 0ms"
             end
@@ -128,17 +136,50 @@ function setRules (operation)
             err = exec(tc_str)
             if err ~= 0 then
                 errors = errors + 1
-                return err
+                -- return err
             end
-            return 0
+
+            rate_control_enabled = x:get("netem", section[".name"], "ratecontrol")
+            if rate_control_enabled == "1" then
+                ratelimit = x:get("netem", section[".name"], "ratecontrol_rate")
+                if ratelimit == nil then
+                   ratelimit = 1000000
+                end
+                burst = math.max(2, math.floor(ratelimit/1000))
+                tc_str = "tc qdisc "..operation.." dev "..iface..
+                         " root handle 1:0 tbf rate "..ratelimit.."kbit burst "..burst.."kb latency 1ms"
+                err = exec(tc_str);
+                if err ~= 0 then
+                    errors = errors + 1
+                    -- return err
+                end
+
+                -- calculate the appropriate queue size
+                qdelay=70
+                mtu=1500
+                qlength=math.max(mtu, ratelimit/8) +
+                        qdelay*ratelimit/8
+
+                tc_str = "tc qdisc add dev "..iface.." parent 1:0 handle "..
+                         "10:1 bfifo limit "..qlength
+                 err = exec(tc_str);
+                 if err ~= 0 then
+                     errors = errors + 1
+                     -- return err
+                 end
+            end
+            return errors
         else
             -- blow away the root in case this was enabled, and isn't anymore
             tc_str = "tc qdisc del dev "..iface.." root"
+            exec(tc_str)
+            tc_str = "tc filter del dev "..iface.." ingress"
             exec(tc_str)
         end
     end)
     return errors
 end
+
 
 function load ()
     print ("  Loading WAN Emulation rules...")
