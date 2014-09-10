@@ -155,7 +155,10 @@ function setRules (operation)
                 end
 
                 -- calculate the appropriate queue size
-                qdelay=70
+                qdelay = x:get("netem", section[".name"], "queue_delay_ms")
+                if qdelay == nil then
+                   qdelay = 70
+                end
                 mtu=1500
                 qlength=math.max(mtu, ratelimit/8) +
                         qdelay*ratelimit/8
@@ -179,7 +182,6 @@ function setRules (operation)
     end)
     return errors
 end
-
 
 function load ()
     print ("  Loading WAN Emulation rules...")
