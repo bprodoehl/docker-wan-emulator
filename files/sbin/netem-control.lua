@@ -78,11 +78,15 @@ function setRules (operation)
                 if delay_corr == nil then
                     delay_corr = 0
                 end
-		        delay_dist = x:get("netem", section[".name"], "delay_dist")
+		delay_dist = x:get("netem", section[".name"], "delay_dist")
                 if delay_dist == nil then
                     delay_dist = "normal"
                 end
-                tc_str = tc_str.." delay "..delay_ms.."ms "..delay_var.."ms "..delay_corr.."% distribution "..delay_dist
+		delay_dist_str = ""
+		if delay_var > 0 then
+		    delay_dist_str = " distribution "..delay_dist
+		end
+                tc_str = tc_str.." delay "..delay_ms.."ms "..delay_var.."ms "..delay_corr.."%"..delay_dist_str
             end
 
             reorder_enabled = x:get("netem", section[".name"], "reordering")
