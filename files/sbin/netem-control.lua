@@ -83,7 +83,7 @@ function setRules (operation)
                     delay_dist = "normal"
                 end
 		delay_dist_str = ""
-		if delay_var > 0 then
+		if delay_var ~= "0" then
 		    delay_dist_str = " distribution "..delay_dist
 		end
                 tc_str = tc_str.." delay "..delay_ms.."ms "..delay_var.."ms "..delay_corr.."%"..delay_dist_str
