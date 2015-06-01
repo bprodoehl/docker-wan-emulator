@@ -2,10 +2,12 @@ FROM phusion/passenger-nodejs
 MAINTAINER Brian Prodoehl <bprodoehl@connectify.me>
 
 # Ensure UTF-8
-RUN apt-get update
 RUN locale-gen en_US.UTF-8
 ENV LANG       en_US.UTF-8
 ENV LC_ALL     en_US.UTF-8
+
+# Make sure we have the latest system upgrades
+RUN apt-get update && apt-get dist-upgrade -y
 
 # Install dependencies
 RUN apt-get update && \
@@ -32,8 +34,6 @@ RUN cp /usr/local/lib/libuci.so /usr/lib/.
 RUN cp /usr/local/lib/libubox.so /usr/lib/.
 
 # Grab netem packages
-#RUN cd /tmp && git clone https://github.com/Connectify/openwrt-netem.git
-#RUN install /tmp/openwrt-netem/netem-control/files/sbin/netem-control.lua /sbin/netem-control
 ADD files/sbin/netem-control.lua /sbin/netem-control
 RUN chmod a+x /sbin/netem-control
 
@@ -66,7 +66,7 @@ RUN mkdir -p /etc/dnsmasq.d && chown app /etc/dnsmasq.d
 RUN mkdir -p /etc/service/redis
 ADD runit/redis.sh /etc/service/redis/run
 
-EXPOSE 22 80 3000
+EXPOSE 80 3000
 
 # Set correct environment variables.
 ENV HOME /root
