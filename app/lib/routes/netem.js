@@ -4,8 +4,10 @@ var async = require('async');
 var exec = require('child_process').exec;
 var sprintf = require("sprintf-js").sprintf;
 
-
-var Netem = require('../lib/netem');
+/* Express models */
+var Bridge = require('../models/bridge');
+var Nat = require('../models/nat');
+var NetemPort = require('../models/netem_port');
 
 var execHelper = function (cmd, cb) {
     var child = exec(cmd,
@@ -44,10 +46,12 @@ function createBridge (bridgeName, interfaces, response) {
     ],
     function(error, results) {
         console.log('All done!');
-        if (typeof(error) !== 'undefined' && error !== null)
-            response.send(400, 'failure: ' + error);
-        else
-            response.send(200, 'success');
+        if (typeof(error) !== 'undefined' && error !== null) {
+            response.status(400).send('failure: ' + error);
+        } else {
+            new Bridge({name: bridgeName, interfaces: interfaces}).save();
+            response.status(200).send('success');
+        }
     });
 }
 
@@ -74,7 +78,22 @@ function createNat (natName, lanIface, wanIface, response) {
 
 function configurePort (name, params, response) {
     console.log('Configuring port ' + name + ' with ' + JSON.stringify(params));
-    
+
+    NetemPort.getByName(name, function(err, existingPort) {
+      if (err) {
+        res.status(400).send('ERROR');
+      } else if (!existingPort) {
+        // create a new port
+        console.log('Creating a new Netem port');
+        new NetemPort({name: name, params: params}).save();
+        response.send('success');
+      } else {
+        // update an existing port
+        console.log('Updating an existing Netem port');
+        response.send('success');
+      }
+    });
+
 //    { "id": 2,
 //      "ifname": "eth1",
 //      "ratecontrol": "1",
@@ -94,26 +113,34 @@ function configurePort (name, params, response) {
 //      "corruption": "0",
 //      "corruption_pct": "0"
 //    }
-    
-    response.send(200, 'success');
 }
 
 exports.get_ports = function (req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Headers", "X-Requested-With");
-    res.send('get_ports\n');
+    NetemPort.getAll(function (err, ports) {
+      if (err) return next(err);
+        res.json(ports);
+      });
+    return;
 };
 
 exports.get_port = function (req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Headers", "X-Requested-With");
-    res.send('get_port ' + req.params.id + '\n');
+    NetemPort.getByName(req.params.id, function(err, obj) {
+      if (err || !obj) {
+        res.status(400).send('ERROR');
+      } else {
+        res.status(200).json(obj);
+      }
+    });
 };
 
 exports.post_port = function (req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Headers", "X-Requested-With");
-    
+
     var portName = req.params.id;
     var portParams = req.body;
     configurePort(portName, portParams, res);
@@ -122,19 +149,29 @@ exports.post_port = function (req, res, next) {
 exports.get_bridges = function (req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Headers", "X-Requested-With");
-    res.send('get_bridges\n');
+    Bridge.getAll(function (err, bridges) {
+      if (err) return next(err);
+        res.json(bridges);
+      });
+    return;
 };
 
 exports.get_bridge = function (req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Headers", "X-Requested-With");
-    res.send('get_bridge ' + req.params.id + '\n');
+    Bridge.getByName(req.params.id, function(err, obj) {
+      if (err || !obj) {
+        res.status(400).send('ERROR');
+      } else {
+        res.status(200).json(obj);
+      }
+    });
 };
 
 exports.post_bridge = function (req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Headers", "X-Requested-With");
-    
+
     var bridgeName = req.params.id;
     var interfaces = req.body.ifaces;
     createBridge(bridgeName, interfaces, res);
@@ -143,19 +180,29 @@ exports.post_bridge = function (req, res, next) {
 exports.get_nats = function (req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Headers", "X-Requested-With");
-    res.send('get_nats\n');
+    Nat.getAll(function (err, nats) {
+      if (err) return next(err);
+        res.json(nats);
+      });
+    return;
 };
 
 exports.get_nat = function (req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Headers", "X-Requested-With");
-    res.send('get_nat ' + req.params.id + '\n');
+    Nat.getByName(req.params.id, function(err, obj) {
+      if (err || !obj) {
+        res.status(400).send('ERROR');
+      } else {
+        res.status(200).json(obj);
+      }
+    });
 };
 
 exports.post_nat = function (req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Headers", "X-Requested-With");
-    
+
     var natName = req.params.id;
     var lanIface = req.body.lan;
     var wanIface = req.body.wan;

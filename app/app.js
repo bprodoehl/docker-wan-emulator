@@ -3,9 +3,13 @@
 var express = require('express');
 var bodyParser = require('body-parser');
 
-var netemRoute = require('./routes/netem.js');
-var pingRoute = require('./routes/ping.js');
-var versionRoute = require('./routes/version.js');
+var Bridge = require('./lib/models/bridge');
+var Nat = require('./lib/models/nat');
+var NetemPort = require('./lib/models/netem_port');
+
+var netemRoute = require('./lib/routes/netem');
+var pingRoute = require('./lib/routes/ping');
+var versionRoute = require('./lib/routes/version');
 
 var app = express();
 
@@ -30,8 +34,10 @@ app.get('/nats', netemRoute.get_nats);
 app.get('/nat/:id', netemRoute.get_nat);
 app.post('/nat/:id', netemRoute.post_nat);
 
-var server = app.listen(3000, function() {
-    // under Phusion Passenger. server.address() blows up
-    //console.log('Listening on port %d', server.address().port);
-    console.log('express.js app is listening...');
+Bridge.flushAll();
+Nat.flushAll();
+NetemPort.flushAll();
+
+var server = app.listen(3001, function() {
+  console.log('web app is listening...');
 });
