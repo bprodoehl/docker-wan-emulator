@@ -7,9 +7,36 @@ module.exports = NetemPort;
 
 var REDIS_KEY='netem-port';
 
+var base_obj = {
+  id: 0,
+  ifname: '',
+  enabled: true,
+  ratecontrol: false,
+  ratecontrol_rate: 0,
+  queue_delay_ms: 0,
+  delay: false,
+  delay_ms: 0,
+  delay_var: 0,
+  delay_corr: 0,
+  delay_dist: 'normal',
+  reordering: false,
+  reordering_immed_pct: 0,
+  reordering_corr: 0,
+  loss: false,
+  loss_pct: 0,
+  loss_corr: 0,
+  duplication: false,
+  duplication_pct: 0,
+  corruption: false,
+  corruption_pct: 0
+};
+
 function NetemPort(obj) {
-    for (var key in obj) {
-        this[key] = obj[key];
+    for (var base_key in base_obj) {
+        this[base_key] = base_obj[base_key];
+    }
+    for (var obj_key in obj) {
+        this[obj_key] = obj[obj_key];
     }
 }
 
