@@ -22,6 +22,7 @@ var execHelper = function (cmdObj, cb) {
             if (error !== null && !cmdObj.ignoreError) {
                 console.log('exec error: ' + error);
                 cb(error);
+                return;
             }
             cb(null);
         }

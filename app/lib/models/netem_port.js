@@ -8,7 +8,6 @@ module.exports = NetemPort;
 var REDIS_KEY='netem-port';
 
 var base_obj = {
-  id: 0,
   ifname: '',
   enabled: true,
   ratecontrol: false,
@@ -43,7 +42,7 @@ function NetemPort(obj) {
 NetemPort.prototype.save = function (fn) {
     var entryJSON = JSON.stringify(this);
     //console.log("Saving ", this);
-    db.hset(REDIS_KEY, this.id, entryJSON);
+    db.hset(REDIS_KEY, this.name, entryJSON);
 };
 
 NetemPort.getRange = function (from, to, fn) {
