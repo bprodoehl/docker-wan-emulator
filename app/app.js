@@ -38,6 +38,6 @@ Bridge.flushAll();
 Nat.flushAll();
 NetemPort.flushAll();
 
-var server = app.listen(3001, function() {
+var server = app.listen(3000, function() {
   console.log('web app is listening...');
 });

@@ -7,7 +7,7 @@ ENV LANG       en_US.UTF-8
 ENV LC_ALL     en_US.UTF-8
 
 # Make sure we have the latest system upgrades
-RUN apt-get update && apt-get dist-upgrade -y
+#RUN apt-get update && apt-get dist-upgrade -y
 
 # Install dependencies
 RUN apt-get update && \
@@ -55,7 +55,7 @@ ADD files/webapp.conf /etc/nginx/sites-enabled/webapp.conf
 RUN rm -f /etc/nginx/sites-enabled/default
 RUN rm -f /etc/service/nginx/down
 
-RUN echo "app ALL = NOPASSWD: /sbin/brctl, /sbin/ifconfig, /sbin/tc, /sbin/iptables, /sbin/netem-control, /usr/local/bin/uci, /usr/bin/sv" > /etc/sudoers.d/app
+RUN echo "app ALL = NOPASSWD: /sbin/brctl, /sbin/ifconfig, /sbin/ip, /sbin/tc, /sbin/iptables, /sbin/netem-control, /usr/local/bin/uci, /usr/bin/sv" > /etc/sudoers.d/app
 
 # Configure runit
 RUN mkdir -p /etc/service/dnsmasq
@@ -65,6 +65,7 @@ RUN mkdir -p /etc/dnsmasq.d && chown app /etc/dnsmasq.d
 
 RUN mkdir -p /etc/service/redis
 ADD runit/redis.sh /etc/service/redis/run
+RUN sed -i 's/^\(daemonize .*\)$/# \1/' /etc/redis/redis.conf
 
 EXPOSE 80 3000
 
