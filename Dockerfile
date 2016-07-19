@@ -13,7 +13,7 @@ ENV LC_ALL     en_US.UTF-8
 RUN apt-get update && \
     apt-get -y install gcc lua5.1 lua5.1-dev make cmake git ca-certificates \
                        bridge-utils dnsmasq iptables tcpdump redis-server \
-                       libhiredis-dev sudo
+                       libhiredis-dev sudo net-tools ethtool
 
 # HACK around https://github.com/dotcloud/docker/issues/5490
 RUN mv /usr/sbin/tcpdump /usr/bin/tcpdump
