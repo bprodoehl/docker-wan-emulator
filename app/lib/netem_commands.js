@@ -76,12 +76,82 @@ exports.build = function (netemPort, operation) {
       cmd_str = cmd_str+" reorder "+reorder_pct+"% "+reorder_corr+"%";
     }
 
+    /*
+     * Variables for each state are defined here: http://man7.org/linux/man-pages/man8/tc-netem.8.html
+     *
+     * LOSS := loss { random PERCENT [ CORRELATION ]  |
+     *                 state p13 [ p31 [ p32 [ p23 [ p14]]]] |
+     *                 gemodel p [ r [ 1-h [ 1-k ]]] }  [ ecn ]
+     *
+     * loss random
+     *   adds an independent loss probability to the packets outgoing from the
+     *   chosen network interface. It is also possible to add a correlation,
+     *   but this option is now deprecated due to the noticed bad behavior.
+     *
+     * loss state
+     *   adds packet losses according to the 4-state Markov using the
+     *   transition probabilities as input parameters. The parameter p13 is
+     *   mandatory and if used alone corresponds to the Bernoulli model. The
+     *   optional parameters allows to extend the model to 2-state (p31),
+     *   3-state (p23 and p32) and 4-state (p14).  State 1 corresponds to good
+     *   reception, State 4 to independent losses, State 3 to burst losses and
+     *   State 2 to good reception within a burst.
+     *
+     * loss gemodel
+     *   adds packet losses according to the Gilbert-Elliot loss model or its
+     *   special cases (Gilbert, Simple Gilbert and Bernoulli). To use the
+     *   Bernoulli model, the only needed parameter is p while the others will
+     *   be set to the default values r=1-p, 1-h=1 and 1-k=0. The parameters
+     *   needed for the Simple Gilbert model are two (p and r), while three
+     *   parameters (p, r, 1-h) are needed for the Gilbert model and four (p,
+     *   r, 1-h and 1-k) are needed for the Gilbert-Elliot model. As known, p
+     *   and r are the transition probabilities between the bad and the good
+     *   states, 1-h is the loss probability in the bad state and 1-k is the
+     *   loss probability in the good state.
+     *
+     */
+
     var loss_enabled = getParam(netemPort.loss, false);
     if (loss_enabled) {
       netem_used = true;
-      var loss_pct = getParam(netemPort.loss_pct, 0);
-      var loss_corr = getParam(netemPort.loss_corr, 0);
-      cmd_str = cmd_str+" loss "+loss_pct+"% "+loss_corr+"%";
+      var loss_model = getParam(netemPort.loss_model, "random");
+      if(loss_model === "state") {
+        var p13 = getParam(netemPort.p13, 0);
+        var p31 = getParam(netemPort.p31, 0);
+        cmd_str = cmd_str+" loss state "+p13+"%";
+        if(p31 > 0) {
+          cmd_str = cmd_str+" "+p31+"%";
+          var p32 = getParam(netemPort.p32, 0);
+          var p23 = getParam(netemPort.p23, 0);
+          if(p32 > 0 || p23 > 0) {
+            cmd_str = cmd_str+" "+p32+"% "+p23+"%";
+            var p14 = getParam(netemPort.p14, 0);
+            if(p14 > 0) {
+              cmd_str = cmd_str+" "+p14+"%";
+            }
+          }
+        }
+      } else if (loss_model === "gemodel") {
+        var p = getParam(netemPort.p, 0);
+        var r = getParam(netemPort.r, 0);
+        cmd_str = cmd_str+" loss gemodel "+p+"%";
+        if(r > 0) {
+          cmd_str = cmd_str+" "+r+"%";
+          var h = getParam(netemPort.h, 0);
+          if(h > 0) {
+            cmd_str = cmd_str+" "+h+"%";
+            var k = getParam(netemPort.k, 0);
+            if(k > 0) {
+              cmd_str = cmd_str+" "+k+"%";
+            }
+          }
+        }
+      } else {
+        //default is random
+        var loss_pct = getParam(netemPort.loss_pct, 0);
+        var loss_corr = getParam(netemPort.loss_corr, 0);
+        cmd_str = cmd_str+" loss random "+loss_pct+"% "+loss_corr+"%";
+      }
     }
 
     var dupe_enabled = getParam(netemPort.duplication, false);
