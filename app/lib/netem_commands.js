@@ -173,7 +173,10 @@ exports.build = function (netemPort, operation) {
     var rate_control_enabled = getParam(netemPort.ratecontrol, false);
     if (rate_control_enabled) {
       var ratelimit = getParam(netemPort.ratecontrol_rate, 1000000);
-      var burst = Math.max(2, Math.floor(ratelimit/1000));
+      var burst = getParam(netemPort.ratecontrol_burst, 0);
+      if (burst === 0) {
+        burst = Math.max(2, Math.floor(ratelimit/1000));
+      }
 
       commands.push({ignoreError: (operation == 'change'),
                      cmd: "sudo tc qdisc add dev "+iface+" root "+
@@ -186,7 +189,7 @@ exports.build = function (netemPort, operation) {
       }
 
       // calculate the appropriate queue size
-      var qdelay = getParam(netemPort.queue_delay_ms, 70);
+      var qdelay = getParam(netemPort.queue_delay_ms, 0);
       if (qdelay === 0) {
         qdelay = 70;
       }

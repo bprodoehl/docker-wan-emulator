@@ -12,6 +12,7 @@ var base_obj = {
   enabled: true,
   ratecontrol: false,
   ratecontrol_rate: 0,
+  ratecontrol_burst: 0,
   queue_delay_ms: 0,
   delay: false,
   delay_ms: 0,
