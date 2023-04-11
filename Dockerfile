@@ -41,9 +41,9 @@ RUN chmod a+x /sbin/netem-control
 RUN mkdir /etc/config && touch /etc/config/netem
 
 # Install speedtest CLI
-RUN apt-get update && apt-get -y install python-setuptools
-RUN easy_install pip
-RUN pip install speedtest-cli
+#RUN apt-get update && apt-get -y install python-setuptools
+#RUN easy_install pip
+#RUN pip install speedtest-cli
 
 # Add Node.js app
 RUN mkdir /home/app/webapp
