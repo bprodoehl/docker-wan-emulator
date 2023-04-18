@@ -168,6 +168,45 @@ exports.build = function (netemPort, operation) {
       cmd_str = cmd_str+" corrupt "+corrupt_pct+"%";
     }
 
+    /*
+     * http://man7.org/linux/man-pages/man8/tc-netem.8.html
+     *
+     * SLOT := slot { MIN_DELAY [ MAX_DELAY ] |
+     *                 distribution { uniform | normal | pareto |
+     *  paretonormal | FILE } DELAY JITTER }
+     *               [ packets PACKETS ] [ bytes BYTES ]
+     *
+     *  slot
+     * 
+     *  defer delivering accumulated packets to within a slot. Each
+     *  available slot can be configured with a minimum delay to acquire,
+     *  and an optional maximum delay.  Alternatively it can be
+     *  configured with the distribution similar to distribution for
+     *  delay option. Slot delays can be specified in nanoseconds,
+     *  microseconds, milliseconds or seconds (e.g. 800us). Values for
+     *  the optional parameters BYTES will limit the number of bytes
+     *  delivered per slot, and/or PACKETS will limit the number of
+     *  packets delivered per slot.
+     * 
+     *  These slot options can provide a crude approximation of bursty
+     *  MACs such as DOCSIS, WiFi, and LTE.
+     *
+     *  Note that slotting is limited by several factors: the kernel
+     *  clock granularity, as with a rate, and attempts to deliver many
+     *  packets within a slot will be smeared by the timer resolution,
+     *  and by the underlying native bandwidth also.
+     * 
+     *  It is possible to combine slotting with a rate, in which case
+     *  complex behaviors where either the rate, or the slot limits on
+     *  bytes or packets per slot, govern the actual delivered rate.
+     *
+     */
+    var slot_cmd = getParam(netemPort.slot, null);
+    if(slot_cmd) {
+      netem_used = true;
+      cmd_str = cmd_str+" slot "+slot_cmd;
+    }
+
     commands.push({cmd: cmd_str});
 
     var rate_control_enabled = getParam(netemPort.ratecontrol, false);
