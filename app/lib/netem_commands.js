@@ -45,6 +45,9 @@ exports.build = function (netemPort, operation) {
       commands.push({cmd: "sudo tc filter add dev "+iface+" parent "+
                           "ffff: protocol ip u32 match u32 0 0 flowid 1:1 "+
                           "action mirred egress redirect dev "+ifb_iface});
+      commands.push({cmd: "sudo tc filter add dev "+iface+" parent "+
+                          "ffff: protocol ipv6 u32 match u32 0 0 flowid 1:1 "+
+                          "action mirred egress redirect dev "+ifb_iface});
     }
 
     var netem_parent = "root";
