@@ -53,6 +53,8 @@ exports.build = function (netemPort, operation) {
     cmd_str = "sudo tc qdisc "+operation+" dev "+ifb_iface+" "+
              netem_parent+" handle 10:0 netem";
 
+    var ratelimit = getParam(netemPort.ratecontrol_rate, 1000000);
+
     var delay_enabled = getParam(netemPort.delay, false);
     if (delay_enabled) {
       netem_used = true;
@@ -60,12 +62,14 @@ exports.build = function (netemPort, operation) {
       var delay_var = getParam(netemPort.delay_var, 0);
       var delay_corr = getParam(netemPort.delay_corr, 0);
       var delay_dist = getParam(netemPort.delay_dist, "normal");
+      var limit = Math.round(1.1 * (1000*ratelimit/8)*(delay_ms/1000) / 800); //assume average packet size of 800 bytes, scale by 1.1 to give 10% overhead
+      limit = Math.max(1000, limit); //don't go below default of 1000
       var delay_dist_str = "";
       if (delay_var !== 0) {
           delay_dist_str = " distribution "+delay_dist;
       }
       cmd_str = cmd_str+" delay "+delay_ms+"ms "+delay_var+"ms "+delay_corr+"%"+
-                delay_dist_str;
+                delay_dist_str + " limit "+limit;
     }
 
     var reorder_enabled = getParam(netemPort.reordering, false);
@@ -211,7 +215,6 @@ exports.build = function (netemPort, operation) {
 
     var rate_control_enabled = getParam(netemPort.ratecontrol, false);
     if (rate_control_enabled) {
-      var ratelimit = getParam(netemPort.ratecontrol_rate, 1000000);
       var burst = getParam(netemPort.ratecontrol_burst, 0);
       if (burst === 0) {
         burst = Math.max(2, Math.floor(ratelimit/1000));
