@@ -15,9 +15,6 @@ RUN apt-get update && \
                        bridge-utils dnsmasq iptables tcpdump redis-server \
                        libhiredis-dev sudo net-tools ethtool
 
-# HACK around https://github.com/dotcloud/docker/issues/5490
-RUN mv /usr/sbin/tcpdump /usr/bin/tcpdump
-
 # Grab sources
 RUN cd /tmp && git clone git://nbd.name/luci2/libubox.git
 RUN cd /tmp && git clone git://nbd.name/uci.git
@@ -26,12 +23,12 @@ RUN cd /tmp && git clone git://nbd.name/uci.git
 RUN cp /usr/include/lua5.1/* /usr/include
 
 # Build libubox and libuci
-RUN cd /tmp/libubox && mkdir build && cd build && cmake .. && make && make install
-RUN cd /tmp/uci && mkdir build && cd build && cmake .. && make && make install
+#RUN cd /tmp/libubox && mkdir build && cd build && cmake .. && make && make install
+#RUN cd /tmp/uci && mkdir build && cd build && cmake .. && make && make install
 
-RUN cp /tmp/uci/build/lua/uci.so /usr/local/lib/lua/5.1/.
-RUN cp /usr/local/lib/libuci.so /usr/lib/.
-RUN cp /usr/local/lib/libubox.so /usr/lib/.
+#RUN cp /tmp/uci/build/lua/uci.so /usr/local/lib/lua/5.1/.
+#RUN cp /usr/local/lib/libuci.so /usr/lib/.
+#RUN cp /usr/local/lib/libubox.so /usr/lib/.
 
 # Grab netem packages
 ADD files/sbin/netem-control.lua /sbin/netem-control
