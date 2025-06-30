@@ -65,7 +65,10 @@ exports.build = function (netemPort, operation) {
       var delay_var = getParam(netemPort.delay_var, 0);
       var delay_corr = getParam(netemPort.delay_corr, 0);
       var delay_dist = getParam(netemPort.delay_dist, "normal");
-      var limit = Math.round(1.1 * (1000*ratelimit/8)*(delay_ms/1000) / 800); //assume average packet size of 800 bytes, scale by 1.1 to give 10% overhead
+      // calculate the limit based on a bunch of small 100 byte packets + 10% overhead
+      // it is unlikely that limit will be reached in any real scenario, 
+      // but makes sure the wan emulation isn't dropping packets unnecessarily
+      var limit = Math.round(1.1 * (1000*ratelimit/8)*(delay_ms/1000) / 100);  
       limit = Math.max(1000, limit); //don't go below default of 1000
       var delay_dist_str = "";
       if (delay_var !== 0) {
