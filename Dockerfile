@@ -1,4 +1,7 @@
-FROM phusion/passenger-nodejs
+# Pinned: the image depends on what the base ships. Ubuntu 26.04 bases (passenger 3.2+)
+# drop iproute2, which silently disables all shaping, so the tag is held at the
+# 24.04 generation the working image was built from.
+FROM phusion/passenger-nodejs:3.1.0
 LABEL Brian Prodoehl <bprodoehl@connectify.me>
 
 # Ensure UTF-8
@@ -9,11 +12,16 @@ ENV LC_ALL     en_US.UTF-8
 # Make sure we have the latest system upgrades
 #RUN apt-get update && apt-get dist-upgrade -y
 
+# The base ships an apt source for phusion's own passenger packages whose signing key has
+# since rotated, and an unverifiable source fails the whole update. Nothing installed below
+# comes from it, so drop it rather than carry a key that will rotate again.
+RUN rm -f /etc/apt/sources.list.d/passenger.list
+
 # Install dependencies
 RUN apt-get update && \
     apt-get -y install gcc lua5.1 lua5.1-dev make cmake git ca-certificates \
                        bridge-utils dnsmasq iptables tcpdump redis-server \
-                       libhiredis-dev sudo net-tools ethtool
+                       libhiredis-dev sudo net-tools ethtool iproute2
 
 # Copy lua headers to make them easier to find
 RUN cp /usr/include/lua5.1/* /usr/include
@@ -32,7 +40,9 @@ ADD files/webapp.conf /etc/nginx/sites-enabled/webapp.conf
 RUN rm -f /etc/nginx/sites-enabled/default
 RUN rm -f /etc/service/nginx/down
 
-RUN echo "app ALL = NOPASSWD: /sbin/brctl, /sbin/ifconfig, /sbin/ip, /sbin/tc, /sbin/iptables, /sbin/netem-control, /usr/bin/sv" > /etc/sudoers.d/app
+# Both paths: /sbin is a symlink to /usr/sbin on merged-usr images, and sudo matches on
+# the resolved path, so a rule naming only one of them stops matching when the base changes.
+RUN echo "app ALL = NOPASSWD: /sbin/brctl, /sbin/ifconfig, /sbin/ip, /sbin/tc, /sbin/iptables, /sbin/netem-control, /usr/bin/sv, /usr/sbin/brctl, /usr/sbin/ifconfig, /usr/sbin/ip, /usr/sbin/tc, /usr/sbin/iptables, /usr/sbin/netem-control" > /etc/sudoers.d/app
 
 # Configure runit
 RUN mkdir -p /etc/service/dnsmasq
