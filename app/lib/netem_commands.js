@@ -65,11 +65,17 @@ exports.build = function (netemPort, operation) {
       var delay_var = getParam(netemPort.delay_var, 0);
       var delay_corr = getParam(netemPort.delay_corr, 0);
       var delay_dist = getParam(netemPort.delay_dist, "normal");
-      // calculate the limit based on a bunch of small 100 byte packets + 10% overhead
-      // it is unlikely that limit will be reached in any real scenario, 
-      // but makes sure the wan emulation isn't dropping packets unnecessarily
-      var limit = Math.round(1.1 * (1000*ratelimit/8)*(delay_ms/1000) / 100);  
-      limit = Math.max(1000, limit); //don't go below default of 1000
+      // This netem is a delay line, not a buffer: it holds each packet for delay_ms and
+      // releases it, so its occupancy is the traffic in flight, rate x delay, and never adds
+      // latency of its own. The queue we mean to model is the bfifo under the rate limiter,
+      // and that is where packets should be dropped. So the limit here is only a backstop
+      // against a runaway sender, and it is a flat number rather than a calculation: it sits
+      // on the ifb fed by this interface's ingress, which carries the OPPOSITE direction from
+      // the rate configured on this port, so sizing it from that rate gave a 50 Mbps download
+      // a queue meant for a 5 Mbps upload and dropped ~10 % of a clean satellite row.
+      // 250000 packets covers 10 Gbps at 100 ms or 1 Gbps at 1000 ms even at 300-byte packets,
+      // and caps a runaway sender at roughly 375 MB per queue.
+      var limit = 250000;
       var delay_dist_str = "";
       if (delay_var !== 0) {
           delay_dist_str = " distribution "+delay_dist;
