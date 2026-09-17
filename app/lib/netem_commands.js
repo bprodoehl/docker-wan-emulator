@@ -72,7 +72,8 @@ exports.build = function (netemPort, operation) {
       // against a runaway sender, and it is a flat number rather than a calculation: it sits
       // on the ifb fed by this interface's ingress, which carries the OPPOSITE direction from
       // the rate configured on this port, so sizing it from that rate gave a 50 Mbps download
-      // a queue meant for a 5 Mbps upload and dropped ~10 % of a clean satellite row.
+      // a queue meant for a 5 Mbps upload, and a sender bursting above the line rate then lost
+      // 10-20 % of its packets here instead of in the buffer that models the bottleneck.
       // 250000 packets covers 10 Gbps at 100 ms or 1 Gbps at 1000 ms even at 300-byte packets,
       // and caps a runaway sender at roughly 375 MB per queue.
       var limit = 250000;
